@@ -104,7 +104,7 @@ function render(){
   const act=ORDER.filter(x=>LV[x]&&LV[x].active).sort((a,b)=>(b===me)-(a===me)),rest=ORDER.filter(x=>!act.includes(x));
   h=`<h1>In the game</h1><p class="sub">${act.length?act.length+(act.length>1?' players':' player'):'No one has joined yet'}</p><div class="grid">${act.map(card).join('')}</div>
   ${adm&&rest.length?`<p class="note">Not in the game (admin only)</p><div class="grid">${rest.map(card).join('')}</div>`:''}
-  <p class="note">${me?'<button class="g" data-act="leave">Leave game</button> ':'<button class="g" data-go="who">Choose character</button> '}${adm?'<button class="g" data-act="seed">Load defaults</button> <button class="g" data-act="clear">Clear all players</button> <button class="g" data-act="logout">Log out</button>':''}</p>`;
+  <p class="note">${me?'<button class="g" data-act="leave">Leave game</button> ':'<button class="g" data-go="who">Choose character</button> '}${adm?'<button class="g" data-act="seed">Add missing characters</button> <button class="g" data-act="backup">Download backup</button> <button class="g" data-act="clear">Clear all players</button> <button class="g" data-act="logout">Log out</button>':''}</p>`;
  }else if(p==='login'){
   h=`<h2>Admin</h2><label>Email</label><input id="u" type="email" autocapitalize="none" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><p id="err" class="bad"></p><button class="b" data-act="login">Log in</button> <button class="g" data-go="who">Back</button>`;
  }else if(p==='char'||p==='about'){
@@ -258,14 +258,21 @@ app.addEventListener('click',async e=>{
   const n0=me;me='';store();if(LV[n0])LV[n0].active=false;go('who');
   await sb.from('live').upsert({name:n0,active:false,updated_at:new Date().toISOString()});
  }
+ if(act==='backup'){
+  const {data,error}=await sb.from('characters').select('*');
+  if(error){alert(error.message);return}
+  const l=document.createElement('a');
+  l.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:'application/json'}));
+  l.download='betrayal-backup.json';l.click();
+ }
  if(act==='clear'){
   const {error}=await sb.from('live').update({active:false}).neq('name','');
   if(error)alert(error.message);
  }
  if(act==='reset'){setPos(n,{});render()}
  if(act==='seed'){
-  const {error}=await sb.from('characters').upsert(ORDER.map(x=>({name:x,about:DEF[x].about,tracks:DEF[x].t})));
-  a.textContent=error?error.message:'Loaded';
+  const {error}=await sb.from('characters').upsert(ORDER.map(x=>({name:x,about:DEF[x].about,tracks:DEF[x].t})),{onConflict:'name',ignoreDuplicates:true});
+  a.textContent=error?error.message:'Done';
  }
  if(act==='save'){
   const ab={};document.querySelectorAll('[data-a]').forEach(i=>ab[i.dataset.a]=i.value.trim());
