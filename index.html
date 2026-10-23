@@ -4,27 +4,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Betrayal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Spectral:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 :root{--bg:#000;--panel:#120506;--red:#d10f1f;--deep:#6e0610;--ink:#f2e6e6;--dim:#9a7f82;box-sizing:border-box}
 *{box-sizing:inherit}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Spectral,Georgia,serif;font-size:17px;line-height:1.5}
 body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#3a0509 0,#000 60%) no-repeat}
 #app{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+#dot{position:fixed;top:calc(env(safe-area-inset-top) + 6px);right:12px;font-size:.75rem;color:var(--dim);z-index:5}
 h1,h2{font-family:'Cinzel Decorative',Georgia,serif;color:var(--red);margin:.2em 0;text-align:center;text-shadow:0 0 18px #6e061099}
 h1{font-size:2rem;line-height:1.15}h2{font-size:1.5rem}
 p.sub{text-align:center;color:var(--dim);margin:.2em 0 1.2em}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .card{background:var(--panel);border:1px solid var(--deep);border-radius:6px;padding:14px 8px;text-align:center;color:var(--ink);font:inherit;cursor:pointer}
 .card:active,.card:hover{border-color:var(--red);box-shadow:0 0 14px var(--deep)}
+.card.fallen{border-color:var(--red)}
 .face{width:92px;height:92px;border-radius:50%;border:2px solid var(--red);background:#1a0608 center/cover;display:flex;align-items:center;justify-content:center;font:900 2.2rem 'Cinzel Decorative',serif;color:var(--red);margin:0 auto 8px}
 .card b{font-family:'Cinzel Decorative',serif;font-size:1.05rem}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:1px 10px;font-size:.78rem;color:var(--dim);margin:6px 10px 0}
+.mini em{color:var(--ink);font-style:normal;font-weight:600}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
-button.b,a.b{background:var(--red);color:#fff;border:0;border-radius:4px;padding:9px 14px;font:600 .95rem Spectral,serif;cursor:pointer}
+button.b,a.b,label.b{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:4px;padding:9px 14px;font:600 .95rem Spectral,serif;cursor:pointer}
 button.g{background:none;color:var(--dim);border:1px solid var(--deep);border-radius:4px;padding:8px 12px;font:inherit;font-size:.9rem;cursor:pointer}
 .tabs{display:flex;gap:8px;margin:12px 0}.tabs button{flex:1}
 .tabs button.act{background:var(--red);color:#fff;border-color:var(--red)}
 .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .col{touch-action:none;user-select:none;-webkit-user-select:none;background:var(--panel);border:1px solid var(--deep);border-radius:6px;padding:6px}
+.col.ro{touch-action:auto}
 .col h3{margin:2px 0 6px;font-size:.82rem;text-align:center;color:var(--red);font-weight:600}
 .cell{height:40px;margin:3px 0;border-radius:4px;background:#1c0709;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#c9aeb0;position:relative}
 .cell.st{outline:1px dashed #b33;outline-offset:-3px}
@@ -36,20 +42,28 @@ button.g{background:none;color:var(--dim);border:1px solid var(--deep);border-ra
 .row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #2a0a0d;padding:7px 0}
 .row span:first-child{color:var(--dim)}
 .about .face{width:130px;height:130px;font-size:3rem}
+.upl{text-align:center;margin:10px 0}
 label{display:block;margin:10px 0 3px;color:var(--dim);font-size:.9rem}
+label.b{margin:0;color:#fff}
 input,select,textarea{width:100%;background:#1a0608;color:var(--ink);border:1px solid var(--deep);border-radius:4px;padding:9px;font:inherit}
 .nums{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}.nums input{padding:8px 2px;text-align:center}
 .chk{font-size:.9rem;margin:3px 0}.ok{color:#7fd18b}.bad{color:#ff5a66}
 :focus-visible{outline:2px solid #fff;outline-offset:2px}
 @media(prefers-reduced-motion:no-preference){.card{transition:box-shadow .2s,border-color .2s}}
-</style></head><body><div id="app"></div>
+</style></head><body><div id="dot"></div><div id="app"></div>
 <script>
-const ADMIN={u:'cliff',p:'pitot'};
+/* ===== PASTE YOUR SUPABASE VALUES HERE ===== */
+const SB_URL='https://YOUR-PROJECT.supabase.co';
+const SB_KEY='YOUR-ANON-PUBLIC-KEY';
+/* =========================================== */
+const sb=supabase.createClient(SB_URL,SB_KEY);
 const KEYS=['speed','might','sanity','knowledge'];
 const LBL={speed:'Speed',might:'Might',sanity:'Sanity',knowledge:'Knowledge'};
+const AB={speed:'SPD',might:'MGT',sanity:'SAN',knowledge:'KNW'};
 const T=(v,s)=>({v,s});
 const GEN={speed:T([2,3,3,4,5,6,7,8],4),might:T([2,3,4,5,6,6,7,8],3),sanity:T([2,3,3,4,5,6,7,7],4),knowledge:T([1,2,3,4,5,6,6,7],3)};
-let DEF={
+/* Defaults: shown until the database has data, and used by the admin "Load defaults" button */
+const DEF={
 Faith:{about:{hobbies:'Music, Dance, Swimming',age:'21',height:"4'8\"",weight:'Unknown',bday:'June 29, 2005',bio:'A shy electrical engineer, known as the mom of the ECE Department and the singer of Bandwidth. The slowest of the group, but sharp-minded.'},
  t:{speed:T([2,2,3,3,4,5,6,6],3),might:T([2,3,3,4,5,6,7,7],3),sanity:T([2,3,3,4,5,6,8,8],4),knowledge:T([2,3,4,5,6,7,8,8],4)}},
 Dean:{about:{hobbies:'Taekwondo, Music, Video Games',age:'21',height:"5'11\"",weight:'140 lb',bday:'June 5, 2005',bio:'Black belt in Taekwondo. Electrical engineer, Dedicated Coder, lead guitar of Bandwidth, Dr. Louie\'s lapboy, and lover of Subway sandwiches.'},
@@ -63,63 +77,57 @@ Andrew:{about:{hobbies:'Camping, Music, Aerospace, Makerspace',age:'',height:"5'
 Edrich:{about:null,t:GEN},Makar:{about:null,t:GEN},Brian:{about:null,t:GEN}};
 const ORDER=['JR','Cliff','Dean','Andrew','Edrich','Makar','Faith','Brian'];
 
-let st;try{st=JSON.parse(localStorage.getItem('betrayal1'))||{}}catch(e){st={}}
-st.c=st.c||{};st.p=st.p||{};
-const save=()=>{try{localStorage.setItem('betrayal1',JSON.stringify(st))}catch(e){alert('Could not save (photo may be too large).')}};
-const clone=o=>JSON.parse(JSON.stringify(o));
-const get=n=>st.c[n]||DEF[n];
-const cur=(n,k)=>{const p=st.p[n]&&st.p[n][k];return p===undefined?get(n).t[k].s-1:p};
-let adm=sessionStorage.getItem('adm')==='1',route={p:'home'};
+let CH={},LV={},adm=false,route={p:'home'},drag=null,me='';
+try{me=localStorage.getItem('betrayal-me')||''}catch(e){}
 const $=s=>document.querySelector(s),app=$('#app');
+const clone=o=>JSON.parse(JSON.stringify(o));
+const get=n=>CH[n]||DEF[n];
+const cur=(n,k)=>{const p=LV[n]&&LV[n].pos&&LV[n].pos[k];return p===undefined?get(n).t[k].s-1:p};
+const can=n=>adm||!me||me===n;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const face=n=>{const d=get(n);return `<div class="face" style="${d.photo?`background-image:url(${d.photo})`:''}">${d.photo?'':esc(n[0])}</div>`};
+const face=n=>{const u=LV[n]&&LV[n].photo_url;return `<div class="face" style="${u?`background-image:url(${esc(u)})`:''}">${u?'':esc(n[0])}</div>`};
 const go=(p,name)=>{route={p,name};render();scrollTo(0,0)};
+const fallen=n=>KEYS.some(k=>cur(n,k)===-1);
 
 function render(){
  const {p,name:n}=route;let h='';
  if(p==='home'){
-  h=`<h1>Welcome to Betrayal</h1><p class="sub">Choose your character</p><div class="grid">${ORDER.map(x=>`<button class="card" data-go="char" data-n="${x}">${face(x)}<b>${x}</b></button>`).join('')}</div>
-  <p class="note">${adm?'<button class="b" data-go="export">Publish changes</button> <button class="g" data-act="logout">Log out</button>':'<button class="g" data-go="login">Admin</button>'}</p>`;
+  h=`<h1>Welcome to Betrayal</h1><p class="sub">Choose your character</p><div class="grid">${ORDER.map(x=>`<button class="card${fallen(x)?' fallen':''}" data-go="char" data-n="${x}">${face(x)}<b>${x}</b>
+   <div class="mini">${KEYS.map(k=>{const c=cur(x,k);return `<span>${AB[k]} <em>${c<0?'☠':get(x).t[k].v[c]}</em></span>`}).join('')}</div></button>`).join('')}</div>
+  <p class="note">${adm?'<button class="g" data-act="seed">Load defaults</button> <button class="g" data-act="logout">Log out</button>':'<button class="g" data-go="login">Admin</button>'}</p>`;
  }else if(p==='login'){
-  h=`<h2>Admin</h2><label>Username</label><input id="u" autocapitalize="none" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><p id="err" class="bad"></p><button class="b" data-act="login">Log in</button> <button class="g" data-go="home">Back</button>`;
+  h=`<h2>Admin</h2><label>Email</label><input id="u" type="email" autocapitalize="none" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><p id="err" class="bad"></p><button class="b" data-act="login">Log in</button> <button class="g" data-go="home">Back</button>`;
  }else if(p==='char'||p==='about'){
-  const d=get(n);
-  h=`<div class="top"><button class="g" data-go="home">← Characters</button>${adm?`<button class="b" data-go="edit" data-n="${n}">Edit</button>`:''}</div>
+  const d=get(n),ok=can(n);
+  h=`<div class="top"><button class="g" data-go="home">← Characters</button>${adm?`<button class="b" data-go="edit" data-n="${n}">Edit</button>`:`<button class="g" data-act="me" data-n="${n}">${me===n?'Not me':'This is me'}</button>`}</div>
   <h2>${n}</h2><div class="tabs"><button class="g ${p==='char'?'act':''}" data-go="char" data-n="${n}">Stats</button><button class="g ${p==='about'?'act':''}" data-go="about" data-n="${n}">About ${n}</button></div>`;
   if(p==='char'){
    h+=`<div class="dead" id="dead"></div><div class="cols">${KEYS.map(k=>{const t=d.t[k],c=cur(n,k);let cells='';
      for(let i=7;i>=0;i--)cells+=`<div class="cell${i===c?' on':''}${i===t.s-1?' st':''}" data-i="${i}">${t.v[i]}</div>`;
      cells+=`<div class="cell sk${c===-1?' on':''}" data-i="-1">☠</div>`;
-     return `<div class="col" data-k="${k}"><h3>${LBL[k]}</h3>${cells}</div>`}).join('')}</div>
-   <p class="note">Drag up or down on a column, or tap a number. Dashed box = starting spot.</p><p class="note"><button class="g" data-act="reset" data-n="${n}">Reset to starting spots</button></p>`;
+     return `<div class="col${ok?'':' ro'}" data-k="${k}"><h3>${LBL[k]}</h3>${cells}</div>`}).join('')}</div>
+   <p class="note">${ok?'Drag up or down on a column, or tap a number. Dashed box = starting spot. Everyone sees changes live.':'Watching live. Tap “Not me” at the top to move these stats.'}</p>${ok?`<p class="note"><button class="g" data-act="reset" data-n="${n}">Reset to starting spots</button></p>`:''}`;
   }else{
    const a=d.about;
-   h+=a?`<div class="about">${face(n)}</div><p style="text-align:center">${esc(a.bio)}</p>
+   h+=`<div class="about">${face(n)}</div>${ok?`<p class="upl"><label class="b">📷 Upload photo<input type="file" id="photo" accept="image/*" hidden></label></p>`:''}`;
+   h+=a?`<p style="text-align:center">${esc(a.bio)}</p>
      ${[['Hobbies',a.hobbies],['Age',a.age],['Height',a.height],['Weight',a.weight],['Birthday',a.bday]].filter(r=>r[1]).map(r=>`<div class="row"><span>${r[0]}</span><span>${esc(r[1])}</span></div>`).join('')}`
-     :`<div class="about">${face(n)}</div><p style="text-align:center;font-size:1.2rem;margin-top:24px">Unknown Character spooky!</p>`;
+     :`<p style="text-align:center;font-size:1.2rem;margin-top:24px">Unknown Character spooky!</p>`;
   }
- }else if(p==='export'){
-  const e=exportData();
-  h=`<div class="top"><button class="g" data-go="home">← Back</button></div><h2>Publish</h2>
-  <p class="note">1. Copy this into <b>characters.json</b> in your repo.</p><textarea id="ex" rows="10" readonly>${esc(e.json)}</textarea><p><button class="b" data-act="copy">Copy JSON</button></p>
-  ${e.ph.length?'<p class="note">2. Download each photo and put it in a <b>photos</b> folder in your repo.</p>'+e.ph.map(x=>`<p style="text-align:center"><a class="b" download="${x[0].toLowerCase()}.png" href="${x[1]}">Download ${x[0]}.png</a></p>`).join(''):''}
-  <p class="note">${e.ph.length?'3':'2'}. Commit. Once the site updates, clear drafts so this device shows the live version.</p><p class="note"><button class="g" data-act="cleardrafts">Clear drafts</button></p>`;
  }else if(p==='edit'){
   const d=get(n),a=d.about||{};
   h=`<div class="top"><button class="g" data-go="char" data-n="${n}">← Cancel</button></div><h2>Edit ${n}</h2>
-  <div id="ph">${face(n)}</div><label>Face photo (PNG)</label><input type="file" id="photo" accept="image/png">
   ${[['hobbies','Hobbies'],['age','Age'],['height','Height'],['weight','Weight'],['bday','Birthday']].map(f=>`<label>${f[1]}</label><input data-a="${f[0]}" value="${esc(a[f[0]])}">`).join('')}
   <label>Bio (leave all blank for "Unknown Character")</label><textarea rows="3" data-a="bio">${esc(a.bio)}</textarea>
   ${KEYS.map(k=>`<label><b>${LBL[k]}</b> — values bottom to top (1 to 8)</label><div class="nums" data-k="${k}">${d.t[k].v.map(v=>`<input type="number" inputmode="numeric" min="0" max="9" value="${v}">`).join('')}</div>
    <label>Starting position</label><select data-s="${k}">${[1,2,3,4,5,6,7,8].map(i=>`<option ${i===d.t[k].s?'selected':''}>${i}</option>`).join('')}</select>`).join('')}
-  <div id="val" style="margin-top:14px"></div><p><button class="b" data-act="save" data-n="${n}">Save changes</button></p>`;
+  <div id="val" style="margin-top:14px"></div><p class="bad" id="err"></p><p><button class="b" data-act="save" data-n="${n}">Save changes</button></p>`;
  }
  app.innerHTML=h;
  if(p==='char')deadText();
  if(p==='edit')validate();
 }
 
-function exportData(){const o={},ph=[];ORDER.forEach(n=>{const d=clone(get(n));if(d.photo&&d.photo.startsWith('data:')){ph.push([n,d.photo]);d.photo='photos/'+n.toLowerCase()+'.png'}o[n]=d});return{json:JSON.stringify(o,null,1),ph}}
 function readT(){const t={};KEYS.forEach(k=>{t[k]={v:[...document.querySelectorAll(`.nums[data-k=${k}] input`)].map(i=>+i.value||0),s:+document.querySelector(`[data-s=${k}]`).value}});return t}
 function validate(){
  const t=readT(),all=KEYS.flatMap(k=>t[k].v),sv=KEYS.map(k=>t[k].v[t[k].s-1]),sp=KEYS.map(k=>t[k].s);
@@ -134,54 +142,105 @@ function validate(){
  ['Starting values are 2 to 6',sv.every(v=>v>=2&&v<=6)]];
  $('#val').innerHTML=C.map(c=>`<div class="chk ${c[1]?'ok':'bad'}">${c[1]?'✓':'✗'} ${c[0]}</div>`).join('');
 }
-function deadText(){const n=route.name;const d=$('#dead');if(d)d.textContent=KEYS.some(k=>cur(n,k)===-1)?'☠ This character has fallen.':''}
+function deadText(){const d=$('#dead');if(d)d.textContent=fallen(route.name)?'☠ This character has fallen.':''}
+function paint(){document.querySelectorAll('.col').forEach(col=>{const c=cur(route.name,col.dataset.k);col.querySelectorAll('.cell').forEach(x=>x.classList.toggle('on',+x.dataset.i===c))});deadText()}
 
+/* ---------- live data ---------- */
+const wt={};
+function pushPos(n){
+ clearTimeout(wt[n]);
+ wt[n]=setTimeout(async()=>{
+  const {error}=await sb.from('live').upsert({name:n,pos:LV[n].pos,updated_at:new Date().toISOString()});
+  wt[n]=0;if(error)$('#dot').textContent='⚠ Not saving';
+ },120);
+}
+function setPos(n,v){LV[n]=LV[n]||{pos:{}};LV[n].pos=v;pushPos(n)}
 function pick(col,y){
  const cs=[...col.querySelectorAll('.cell')];let b=cs[0];
  for(const c of cs)if(y>=c.getBoundingClientRect().top)b=c;
  const v=+b.dataset.i,n=route.name,k=col.dataset.k;
  if(cur(n,k)===v)return;
- (st.p[n]=st.p[n]||{})[k]=v;save();
+ setPos(n,Object.assign({},LV[n]&&LV[n].pos,{[k]:v}));
  cs.forEach(c=>c.classList.toggle('on',+c.dataset.i===v));deadText();
  if(navigator.vibrate)navigator.vibrate(8);
 }
-let drag=null;
-app.addEventListener('pointerdown',e=>{const col=e.target.closest('.col');if(!col||route.p!=='char')return;drag=col;col.setPointerCapture(e.pointerId);pick(col,e.clientY)});
-app.addEventListener('pointermove',e=>{if(drag)pick(drag,e.clientY)});
-['pointerup','pointercancel'].forEach(t=>app.addEventListener(t,()=>drag=null));
+const busy=n=>wt[n]||(drag&&route.name===n);
+function onLive(n){
+ if(busy(n))return;
+ if(route.p==='home'||(route.p==='about'&&route.name===n))render();
+ else if(route.p==='char'&&route.name===n)paint();
+}
+function onChars(){
+ if(drag||!['home','char','about'].includes(route.p))return;render();
+}
+async function load(){
+ try{
+  const [a,b]=await Promise.all([sb.from('characters').select('*'),sb.from('live').select('*')]);
+  (a.data||[]).forEach(r=>CH[r.name]={about:r.about,t:r.tracks});
+  (b.data||[]).forEach(r=>{if(!busy(r.name))LV[r.name]={pos:r.pos||{},photo_url:r.photo_url}});
+ }catch(e){}
+ if(!drag&&['home','char','about'].includes(route.p))render();
+}
+sb.channel('betrayal')
+ .on('postgres_changes',{event:'*',schema:'public',table:'live'},p=>{const r=p.new;if(r&&r.name){if(!busy(r.name))LV[r.name]={pos:r.pos||{},photo_url:r.photo_url};onLive(r.name)}})
+ .on('postgres_changes',{event:'*',schema:'public',table:'characters'},p=>{const r=p.new;if(r&&r.name){CH[r.name]={about:r.about,t:r.tracks};onChars()}})
+ .subscribe(s=>{$('#dot').textContent=s==='SUBSCRIBED'?'● Live':'○ Reconnecting';if(s==='SUBSCRIBED')load()});
+sb.auth.getSession().then(({data})=>{adm=!!data.session;render()});
+sb.auth.onAuthStateChange((_e,s)=>{adm=!!s});
 
-app.addEventListener('click',e=>{
+/* ---------- photos ---------- */
+function upPhoto(f,n){
+ const img=new Image();
+ img.onerror=()=>alert('Could not read that photo. Try a different one.');
+ img.onload=()=>{
+  const s=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=400;
+  c.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,400,400);
+  c.toBlob(async blob=>{
+   try{
+    const path=n.toLowerCase()+'-'+Date.now()+'.jpg';
+    const u=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg'});
+    if(u.error)throw u.error;
+    const url=sb.storage.from('photos').getPublicUrl(path).data.publicUrl;
+    const r=await sb.from('live').upsert({name:n,photo_url:url});
+    if(r.error)throw r.error;
+    LV[n]=Object.assign(LV[n]||{pos:{}},{photo_url:url});render();
+   }catch(e){alert('Upload failed: '+(e.message||e))}
+  },'image/jpeg',.85);
+ };
+ img.src=URL.createObjectURL(f);
+}
+
+/* ---------- events ---------- */
+app.addEventListener('pointerdown',e=>{const col=e.target.closest('.col');if(!col||route.p!=='char'||!can(route.name))return;drag=col;col.setPointerCapture(e.pointerId);pick(col,e.clientY)});
+app.addEventListener('pointermove',e=>{if(drag)pick(drag,e.clientY)});
+['pointerup','pointercancel'].forEach(t=>app.addEventListener(t,()=>{drag=null}));
+
+app.addEventListener('click',async e=>{
  const g=e.target.closest('[data-go]');if(g){go(g.dataset.go,g.dataset.n||route.name);return}
- const a=e.target.closest('[data-act]');if(!a)return;const n=a.dataset.n;
- if(a.dataset.act==='login'){
-  if($('#u').value.trim().toLowerCase()===ADMIN.u&&$('#pw').value===ADMIN.p){adm=true;sessionStorage.setItem('adm','1');go('home')}
-  else $('#err').textContent='Wrong username or password.';
+ const a=e.target.closest('[data-act]');if(!a)return;const n=a.dataset.n,act=a.dataset.act;
+ if(act==='login'){
+  const {error}=await sb.auth.signInWithPassword({email:$('#u').value.trim(),password:$('#pw').value});
+  if(error)$('#err').textContent=error.message;else{adm=true;go('home')}
  }
- if(a.dataset.act==='logout'){adm=false;sessionStorage.removeItem('adm');render()}
- if(a.dataset.act==='copy'){const t=$('#ex');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).catch(()=>document.execCommand('copy'));a.textContent='Copied'}
- if(a.dataset.act==='cleardrafts'){st.c={};save();go('home')}
- if(a.dataset.act==='reset'){delete st.p[n];save();render()}
- if(a.dataset.act==='save'){
-  const d=clone(get(n)),ab={};
-  document.querySelectorAll('[data-a]').forEach(i=>ab[i.dataset.a]=i.value.trim());
-  d.about=Object.values(ab).some(x=>x)?ab:null;d.t=readT();
-  if(window._ph)d.photo=window._ph;window._ph=null;
-  st.c[n]=d;save();go('export');
+ if(act==='logout'){await sb.auth.signOut();adm=false;render()}
+ if(act==='me'){me=me===n?'':n;try{localStorage.setItem('betrayal-me',me)}catch(e){}render()}
+ if(act==='reset'){setPos(n,{});render()}
+ if(act==='seed'){
+  const {error}=await sb.from('characters').upsert(ORDER.map(x=>({name:x,about:DEF[x].about,tracks:DEF[x].t})));
+  a.textContent=error?error.message:'Loaded';
+ }
+ if(act==='save'){
+  const ab={};document.querySelectorAll('[data-a]').forEach(i=>ab[i.dataset.a]=i.value.trim());
+  const about=Object.values(ab).some(x=>x)?ab:null,tracks=readT();
+  const {error}=await sb.from('characters').upsert({name:n,about,tracks,updated_at:new Date().toISOString()});
+  if(error){$('#err').textContent=error.message;return}
+  CH[n]={about,t:tracks};go('char',n);
  }
 });
 app.addEventListener('input',e=>{if(route.p==='edit'&&e.target.closest('.nums'))validate()});
 app.addEventListener('change',e=>{
  if(route.p==='edit'&&e.target.dataset.s)validate();
- if(e.target.id==='photo'){
-  const f=e.target.files[0];if(!f)return;
-  if(f.type!=='image/png'){alert('Please choose a PNG file.');e.target.value='';return}
-  const img=new Image();img.onload=()=>{
-   const s=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=240;
-   c.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,240,240);
-   window._ph=c.toDataURL('image/png');
-   $('#ph').innerHTML=`<div class="face" style="background-image:url(${window._ph})"></div>`};
-  img.src=URL.createObjectURL(f);
- }
+ if(e.target.id==='photo'){const f=e.target.files[0];if(f)upPhoto(f,route.name)}
 });
-fetch('characters.json?'+Date.now()).then(r=>r.json()).then(j=>{DEF=Object.assign(DEF,j)}).catch(()=>{}).finally(render);
+render();load();
 </script></body></html>
