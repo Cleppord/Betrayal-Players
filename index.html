@@ -120,7 +120,7 @@ function render(){
   }else{
    const a=d.about;
    h+=`<div class="about">${face(n)}</div>${ok?`<p class="upl"><label class="b">📷 Upload photo<input type="file" id="photo" accept="image/*" hidden></label></p>`:''}`;
-   h+=a?`<p style="text-align:center">${esc(a.bio)}</p>
+   h+=a?`<p style="text-align:center;white-space:pre-wrap">${esc(a.bio)}</p>
      ${[['Hobbies',a.hobbies],['Age',a.age],['Height',a.height],['Weight',a.weight],['Birthday',a.bday]].filter(r=>r[1]).map(r=>`<div class="row"><span>${r[0]}</span><span>${esc(r[1])}</span></div>`).join('')}`
      :`<p style="text-align:center;font-size:1.2rem;margin-top:24px">Unknown Character spooky!</p>`;
   }
