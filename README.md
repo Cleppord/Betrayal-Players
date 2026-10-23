@@ -58,7 +58,7 @@ The `anon` key is designed to be public. Row-level security in the SQL file is w
 
 ### 4. Load the characters
 
-Log in as admin (the **Admin** button on the start screen), open the lobby, and tap **Load defaults** once. This writes the built-in character data to the database.
+Log in as admin (the **Admin** button on the start screen), open the lobby, and tap **Add missing characters** once. This adds any character not yet in the database and never overwrites ones you have edited.
 
 ## Using it
 
@@ -71,7 +71,7 @@ Log in as admin (the **Admin** button on the start screen), open the lobby, and 
 
 **Admin**
 - Log in, open any character (including ones not in the game) and tap **Edit** to change the bio, track values and starting positions.
-- **Clear all players** resets the lobby between games. **Load defaults** restores the built-in characters.
+- **Clear all players** resets the lobby between games. **Add missing characters** fills in any character that has no data yet, and **Download backup** saves all bios and tracks to a JSON file.
 
 ## Customizing
 
