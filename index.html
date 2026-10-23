@@ -11,7 +11,7 @@
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Spectral,Georgia,serif;font-size:17px;line-height:1.5}
 body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#3a0509 0,#000 60%) no-repeat}
 #app{max-width:560px;margin:0 auto;padding:18px 16px 40px}
-#dot{position:fixed;top:calc(env(safe-area-inset-top) + 6px);right:12px;font-size:.75rem;color:var(--dim);z-index:5}
+#dot{max-width:60%;text-align:right;position:fixed;top:calc(env(safe-area-inset-top) + 6px);right:12px;font-size:.75rem;color:var(--dim);z-index:5}
 h1,h2{font-family:'Cinzel Decorative',Georgia,serif;color:var(--red);margin:.2em 0;text-align:center;text-shadow:0 0 18px #6e061099}
 h1{font-size:2rem;line-height:1.15}h2{font-size:1.5rem}
 p.sub{text-align:center;color:var(--dim);margin:.2em 0 1.2em}
@@ -58,6 +58,7 @@ const SB_URL='https://YOUR-PROJECT.supabase.co';
 const SB_KEY='YOUR-ANON-PUBLIC-KEY';
 /* =========================================== */
 const sb=supabase.createClient(SB_URL,SB_KEY);
+let liveOn=false;
 const KEYS=['speed','might','sanity','knowledge'];
 const LBL={speed:'Speed',might:'Might',sanity:'Sanity',knowledge:'Knowledge'};
 const AB={speed:'SPD',might:'MGT',sanity:'SAN',knowledge:'KNW'};
@@ -192,16 +193,23 @@ function onChars(){
 async function load(){
  try{
   const [a,b]=await Promise.all([sb.from('characters').select('*'),sb.from('live').select('*')]);
+  const bad=a.error||b.error;
+  if(bad)$('#dot').textContent='⚠ '+bad.message;
   (a.data||[]).forEach(r=>CH[r.name]={about:r.about,t:r.tracks});
   (b.data||[]).forEach(r=>{if(!busy(r.name))LV[r.name]={pos:r.pos||{},photo_url:r.photo_url,active:r.active}});
- }catch(e){}
+ }catch(e){$('#dot').textContent='⚠ '+(e.message||e)}
  if(checkMe())return;
  if(!drag&&['who','home','char','about'].includes(route.p))render();
 }
 sb.channel('betrayal')
  .on('postgres_changes',{event:'*',schema:'public',table:'live'},p=>{const r=p.new;if(r&&r.name){if(!busy(r.name))LV[r.name]={pos:r.pos||{},photo_url:r.photo_url,active:r.active};onLive(r.name)}})
  .on('postgres_changes',{event:'*',schema:'public',table:'characters'},p=>{const r=p.new;if(r&&r.name){CH[r.name]={about:r.about,t:r.tracks};onChars()}})
- .subscribe(s=>{$('#dot').textContent=s==='SUBSCRIBED'?'● Live':'○ Reconnecting';if(s==='SUBSCRIBED')load()});
+ .subscribe((s,err)=>{
+  liveOn=s==='SUBSCRIBED';
+  $('#dot').textContent=liveOn?'● Live':'○ '+s+(err&&err.message?': '+err.message:'');
+  if(liveOn)load();
+ });
+setInterval(()=>{if(!liveOn&&!drag)load()},4000);
 sb.auth.getSession().then(({data})=>{adm=!!data.session;render()});
 sb.auth.onAuthStateChange((_e,s)=>{adm=!!s});
 
@@ -244,7 +252,7 @@ app.addEventListener('click',async e=>{
   me=n;store();grace=Date.now()+4000;
   LV[n]=Object.assign(LV[n]||{pos:{}},{active:true});go('home');
   const {error}=await sb.from('live').upsert({name:n,active:true,updated_at:new Date().toISOString()});
-  if(error)alert('Could not join: '+error.message);
+  if(error){alert('Could not join: '+error.message);LV[n].active=false;me='';store();go('who')}
  }
  if(act==='leave'){
   const n0=me;me='';store();if(LV[n0])LV[n0].active=false;go('who');
