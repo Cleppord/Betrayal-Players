@@ -54,6 +54,8 @@ input,select,textarea{width:100%;background:#1a0608;color:var(--ink);border:1px 
 @media(prefers-reduced-motion:no-preference){.card{transition:box-shadow .2s,border-color .2s}}
 details{background:var(--panel);border:1px solid var(--deep);border-radius:6px;margin:8px 0;padding:10px 12px}
 summary{cursor:pointer;font-family:'Cinzel Decorative',serif;color:var(--red)}
+details ul.d{margin:.3em 0;padding-left:1.2em}details li{margin:.3em 0}ul.d{list-style:'♦  '}
+.flav{font-style:italic;color:#d9c3c5}
 details p,.prose{margin:.6em 0;white-space:pre-wrap}
 h4{color:var(--red);margin:.9em 0 .1em;font-size:.95rem}
 .omen{border:1px solid var(--red);border-radius:6px;padding:12px;margin:10px 0;box-shadow:0 0 14px var(--deep)}
@@ -106,7 +108,7 @@ const card=x=>`<button class="card${fallen(x)?' fallen':''}" data-go="char" data
 function render(){
  const {p,name:n}=route;let h='';
  if(p==='welcome'){
-  h=`<h1>The Uninvited Junior</h1><p class="sub">The Haunting of Bannan</p><p class="note"><i>“${STORY.tagline}”</i></p>
+  h=`<h1>The Uninvited Junior</h1><p class="sub">An Invitation to the House on the Hill</p><p class="note"><i>“${STORY.tagline}”</i></p>
   <div class="prose">${esc(STORY.chapters[0].x)}</div>
   <p style="text-align:center"><button class="b" data-go="who">Enter Bannan</button></p><p class="note"><button class="g" data-go="login">Admin</button></p>`;
  }else if(p==='who'){
@@ -132,15 +134,22 @@ function render(){
   }else if(p==='book'){
    h+=STORY.chapters.slice(1).map(c=>`<details><summary>${esc(c.t)}</summary>${c.who.includes(n)?'<div class="mine">★ Your chapter</div>':''}<p>${esc(c.x)}</p></details>`).join('');
   }else if(p==='haunts'){
-   const O=STORY.omen;
-   h+=`<div class="omen"><h3>${esc(O.name)}</h3><p class="prose">${esc(O.text)}</p></div>
-   <h4>Haunt roll</h4>${STORY.haunts.map(x=>`<div class="row"><span>${x.d}. ${esc(x.name)}</span><span style="text-align:right">${esc(x.traitor)}</span></div>`).join('')}
-   <p class="note">When the haunt starts, the Traitor takes a phone and opens the Traitor's Tome. Everyone else opens the Survivors' Tome. Do not read the other book.</p>
+   const O=STORY.omen,C=STORY.chart;
+   h+=`<div class="omen"><h3>${esc(O.name)}</h3><div class="mine">${esc(O.type)}</div><p class="flav">${esc(O.flavor)}</p>${O.rules.map(r=>`<p>${esc(r)}</p>`).join('')}<p><b>${esc(O.end)}</b></p></div>
+   <h4>Haunt chart: Invitation column</h4><p class="note">Find the room the haunt revealer was in when the Invitation was drawn.</p>
+   ${Object.keys(C).map(k=>`<div class="row"><span>${esc(k.replace('_',' '))}</span><span>${C[k]}</span></div>`).join('')}
+   <h4>Traitor</h4>${STORY.haunts.map(x=>`<div class="row"><span>${x.n}. ${esc(x.name)}</span><span style="text-align:right">${esc(STORY.traitors[x.n])}</span></div>`).join('')}
+   <p class="note">* If two explorers tie, choose the haunt revealer. If neither is the haunt revealer, choose the one closest to the left of the haunt revealer.</p>
+   <p class="note">The traitor opens the Traitor's Tome. Everyone else opens the Survivors' Tome. Do not read the other book.</p>
    <p style="text-align:center"><button class="b" data-go="tomet" data-n="${n}">Traitor's Tome</button> <button class="b" data-go="tomes" data-n="${n}">Survivors' Tome</button></p>`;
   }else if(p==='tomet'||p==='tomes'){
-   const T=p==='tomet';
-   h+=`<div class="top"><button class="g" data-go="haunts" data-n="${n}">← Haunts</button></div><h2>${T?'Traitor\'s Tome':'Survivors\' Tome'}</h2>
-   <p class="note">${T?'Only the Traitor reads this. Survivors, look away.':'Only the Survivors read this. Traitor, look away.'}</p>`+STORY.haunts.map(x=>`<details><summary>${x.d}. ${esc(x.name)}</summary><p>${esc(T?x.tome:x.survive)}</p></details>`).join('');
+   const T=p==='tomet',L=(a,c)=>a&&a.length?`<ul class="d">${a.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`:'';
+   const page=x=>{const B=T?x.t:x.s;
+    if(!B)return `<p>This haunt uses the hidden traitor rules described on page 17 of the rulebook. All players read this haunt in the Survivors' Tome.</p>`;
+    return `<p class="flav">${esc(B.flavor)}</p><h4>Right Now</h4>${L(B.now)}<h4>What You Know About the ${T?'Heroes':'Bad Guys'}</h4><p>${esc(B.know)}</p><h4>You Win When . . .</h4><p>${esc(B.win)}</p>`
+    +B.rules.map(r=>`<h4>${esc(r.h)}</h4>${L(r.i)}`).join('')+`<h4>Special Attack Rules</h4>${L(B.attack)}<h4>If You Win . . .</h4><p class="flav">${esc(B.ifwin)}</p>`};
+   h+=`<div class="top"><button class="g" data-go="haunts" data-n="${n}">← Haunts</button></div><h2>${T?'Traitor\'s Tome':'Secrets of Survival'}</h2>
+   <p class="note">${T?'Only the Traitor reads this. Survivors, look away.':'Only the Survivors read this. Traitor, look away.'}</p>`+STORY.haunts.map(x=>`<details><summary>Haunt ${x.n}: ${esc(x.name)}</summary>${page(x)}</details>`).join('');
   }else{
    const a=d.about;
    h+=`<div class="about">${face(n)}</div>${ok?`<p class="upl"><label class="b">📷 Upload photo<input type="file" id="photo" accept="image/*" hidden></label></p>`:''}`;
