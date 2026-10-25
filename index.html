@@ -119,10 +119,10 @@ function render(){
   <p class="note">${me?'<button class="g" data-act="leave">Leave game</button> ':'<button class="g" data-go="who">Choose character</button> '}${adm?'<button class="g" data-act="seed">Add missing characters</button> <button class="g" data-act="backup">Download backup</button> <button class="g" data-act="clear">Clear all players</button> <button class="g" data-act="logout">Log out</button>':''}</p>`;
  }else if(p==='login'){
   h=`<h2>Admin</h2><label>Email</label><input id="u" type="email" autocapitalize="none" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><p id="err" class="bad"></p><button class="b" data-act="login">Log in</button> <button class="g" data-go="who">Back</button>`;
- }else if(['char','about','book','haunts'].includes(p)){
+ }else if(['char','about','book','haunts','tomet','tomes'].includes(p)){
   const d=get(n),ok=can(n);
   h=`<div class="top"><button class="g" data-go="home">← Players</button>${adm?`<button class="b" data-go="edit" data-n="${n}">Edit</button>`:''}</div>
-  <h2>${n}</h2><div class="tabs">${[['char','Stats'],['about','About'],['book','Story'],['haunts','Haunts']].map(t=>`<button class="g ${p===t[0]?'act':''}" data-go="${t[0]}" data-n="${n}">${t[1]}</button>`).join('')}</div>`;
+  <h2>${n}</h2><div class="tabs">${[['char','Stats'],['about','About'],['book','Story'],['haunts','Haunts']].map(t=>`<button class="g ${t[0]===p||(t[0]==='haunts'&&p.startsWith('tome'))?'act':''}" data-go="${t[0]}" data-n="${n}">${t[1]}</button>`).join('')}</div>`;
   if(p==='char'){
    h+=`<div class="dead" id="dead"></div><div class="cols">${KEYS.map(k=>{const t=d.t[k],c=cur(n,k);let cells='';
      for(let i=7;i>=0;i--)cells+=`<div class="cell${i===c?' on':''}${i===t.s-1?' st':''}" data-i="${i}">${t.v[i]}</div>`;
@@ -133,7 +133,14 @@ function render(){
    h+=STORY.chapters.slice(1).map(c=>`<details><summary>${esc(c.t)}</summary>${c.who.includes(n)?'<div class="mine">★ Your chapter</div>':''}<p>${esc(c.x)}</p></details>`).join('');
   }else if(p==='haunts'){
    const O=STORY.omen;
-   h+=`<div class="omen"><h3>${esc(O.name)}</h3><p class="prose">${esc(O.text)}</p></div>`+STORY.haunts.map(x=>`<details><summary>${x.d}. ${esc(x.name)}</summary><p><b>Traitor:</b> ${esc(x.traitor)}</p><h4>Traitor's Tome</h4><p>${esc(x.tome)}</p><h4>Secrets of Survival</h4><p>${esc(x.survive)}</p></details>`).join('')+`<p class="note">Traitor: read only your own book.</p>`;
+   h+=`<div class="omen"><h3>${esc(O.name)}</h3><p class="prose">${esc(O.text)}</p></div>
+   <h4>Haunt roll</h4>${STORY.haunts.map(x=>`<div class="row"><span>${x.d}. ${esc(x.name)}</span><span style="text-align:right">${esc(x.traitor)}</span></div>`).join('')}
+   <p class="note">When the haunt starts, the Traitor takes a phone and opens the Traitor's Tome. Everyone else opens the Survivors' Tome. Do not read the other book.</p>
+   <p style="text-align:center"><button class="b" data-go="tomet" data-n="${n}">Traitor's Tome</button> <button class="b" data-go="tomes" data-n="${n}">Survivors' Tome</button></p>`;
+  }else if(p==='tomet'||p==='tomes'){
+   const T=p==='tomet';
+   h+=`<div class="top"><button class="g" data-go="haunts" data-n="${n}">← Haunts</button></div><h2>${T?'Traitor\'s Tome':'Survivors\' Tome'}</h2>
+   <p class="note">${T?'Only the Traitor reads this. Survivors, look away.':'Only the Survivors read this. Traitor, look away.'}</p>`+STORY.haunts.map(x=>`<details><summary>${x.d}. ${esc(x.name)}</summary><p>${esc(T?x.tome:x.survive)}</p></details>`).join('');
   }else{
    const a=d.about;
    h+=`<div class="about">${face(n)}</div>${ok?`<p class="upl"><label class="b">📷 Upload photo<input type="file" id="photo" accept="image/*" hidden></label></p>`:''}`;
