@@ -22,7 +22,7 @@ traitors:{51:'Faith or left of the haunt revealer',52:'JR or left of the haunt r
 haunts:[
 {n:51,name:'The Woman in the Mirror',
 t:{flavor:'Your reflection smiles first. Then it steps out of the glass wearing your face, your silence, your stubborn little frown. Faith is the one who was never real. Her friends trust her. Soon they will trust you.',
-now:['Your explorer is still in the game but has turned traitor. You are the False Faith.','Secretly write down the name of the hero with the highest Sanity. This hero is your Mark.'],
+now:['Your explorer is still in the game but has turned traitor. You are the False Faith.','Secretly write down the name of the hero with the lowest Sanity. This hero is your Mark.'],
 know:'They are trying to tell the real Faith from you. Two rabbits can do it.',
 win:'. . . all the heroes are dead, or your Mark\'s Sanity drops to the skull symbol.',
 rules:[{h:'Mirror Step',i:['Once during your turn, if you are in the Gallery or Master Bedroom, you can move to the other room. This counts as 1 space of movement.']}],
