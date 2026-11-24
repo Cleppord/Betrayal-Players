@@ -1,3 +1,6 @@
+# Live Site 
+https://cleppord.github.io/Betrayal-Players/ 
+
 # Betrayal
 
 A black-and-red, phone-friendly stat tracker for playing *Betrayal at House on the Hill* with friends. Everyone opens the same link on their own phone, picks their character, and drags their Speed, Might, Sanity and Knowledge tracks. Everyone else sees the changes the moment they happen.
